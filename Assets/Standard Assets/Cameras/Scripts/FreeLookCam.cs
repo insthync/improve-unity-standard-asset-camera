@@ -22,16 +22,19 @@ namespace UnityStandardAssets.Cameras
         public float m_MinZoomDistance = 2f;                // How far in front of the pivot the character's look target is.
         public float m_MaxZoomDistance = 10f;
         public float m_ZoomSpeed = 2f;
-        public float m_ZoomSmoothing = 0.0f;
+        public float m_ZoomMoveTime = 0.4f;
         public bool m_EnabledRotation = true;
         public bool m_EnabledZoom = true;
         public bool m_LockCursor = false;                   // Whether the cursor should be hidden and locked.
         public bool m_VerticalAutoReturn = false;           // set wether or not the vertical axis should auto return
+        public ProtectCameraFromWallClip m_WallClipProtector;
 
         protected float m_LookAngle;                    // The rig's y axis rotation.
         protected float m_TiltAngle;                    // The pivot's x axis rotation.
         protected float m_OriginalDist;
         protected float m_CurrentDist;
+        protected float m_CurrentZoomDist;
+        protected float m_MoveVelocity;             // the velocity at which the camera moved
         protected Vector3 m_PivotEulers;
         protected Quaternion m_PivotTargetRot;
         protected Quaternion m_TransformTargetRot;
@@ -71,6 +74,10 @@ namespace UnityStandardAssets.Cameras
             
             m_OriginalDist = m_Cam.localPosition.magnitude;
             m_CurrentDist = m_OriginalDist;
+            m_CurrentZoomDist = m_CurrentDist;
+
+            if (m_WallClipProtector == null)
+                m_WallClipProtector = GetComponent<ProtectCameraFromWallClip>();
 
             Singleton = this;
         }
@@ -88,6 +95,15 @@ namespace UnityStandardAssets.Cameras
                 Cursor.lockState = m_LockCursor ? CursorLockMode.Locked : CursorLockMode.None;
                 Cursor.visible = !m_LockCursor;
                 m_LockCursorDirty = m_LockCursor;
+            }
+        }
+
+        protected void LateUpdate()
+        {
+            if (m_EnabledZoom && m_WallClipProtector == null)
+            {
+                m_CurrentZoomDist = Mathf.SmoothDamp(m_CurrentZoomDist, m_CurrentDist, ref m_MoveVelocity, m_ZoomMoveTime);
+                m_Cam.localPosition = -Vector3.forward * m_CurrentZoomDist;
             }
         }
         
@@ -156,10 +172,8 @@ namespace UnityStandardAssets.Cameras
             var step = scroll * m_ZoomSpeed;
             m_CurrentDist = Mathf.Clamp(m_CurrentDist - step, m_MinZoomDistance, m_MaxZoomDistance);
 
-            if (m_ZoomSmoothing > 0)
-                m_Cam.localPosition = Vector3.Slerp(m_Cam.localPosition, -Vector3.forward * m_CurrentDist, m_ZoomSmoothing * Time.deltaTime);
-            else
-                m_Cam.localPosition = -Vector3.forward * m_CurrentDist;
+            if (m_WallClipProtector != null)
+                m_WallClipProtector.lookDistance = m_CurrentDist;
         }
     }
 }
