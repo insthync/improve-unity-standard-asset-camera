@@ -13,21 +13,21 @@ namespace UnityStandardAssets.Cameras
         // 		Pivot
         // 			Camera
 
-        public float m_MoveSpeed = 1f;                      // How fast the rig will move to keep up with the target's position.
+        public float moveSpeed = 1f;                      // How fast the rig will move to keep up with the target's position.
         [Range(0f, 10f)]
-        public float m_TurnSpeed = 1.5f;   // How fast the rig will rotate from user input.
-        public float m_TurnSmoothing = 0.0f;                // How much smoothing to apply to the turn input, to reduce mouse-turn jerkiness
-        public float m_TiltMax = 75f;                       // The maximum value of the x axis rotation of the pivot.
-        public float m_TiltMin = 45f;                       // The minimum value of the x axis rotation of the pivot.
-        public float m_MinZoomDistance = 2f;                // How far in front of the pivot the character's look target is.
-        public float m_MaxZoomDistance = 10f;
-        public float m_ZoomSpeed = 2f;
-        public float m_ZoomMoveTime = 0.4f;
-        public bool m_EnabledRotation = true;
-        public bool m_EnabledZoom = true;
-        public bool m_LockCursor = false;                   // Whether the cursor should be hidden and locked.
-        public bool m_VerticalAutoReturn = false;           // set wether or not the vertical axis should auto return
-        public ProtectCameraFromWallClip m_WallClipProtector;
+        public float turnSpeed = 1.5f;   // How fast the rig will rotate from user input.
+        public float turnSmoothing = 0.0f;                // How much smoothing to apply to the turn input, to reduce mouse-turn jerkiness
+        public float tiltMax = 75f;                       // The maximum value of the x axis rotation of the pivot.
+        public float tiltMin = 45f;                       // The minimum value of the x axis rotation of the pivot.
+        public float minZoomDistance = 2f;                // How far in front of the pivot the character's look target is.
+        public float maxZoomDistance = 10f;
+        public float zoomSpeed = 2f;
+        public float zoomMoveTime = 0.4f;
+        public bool enabledRotation = true;
+        public bool enabledZoom = true;
+        public bool lockCursor = false;                   // Whether the cursor should be hidden and locked.
+        public bool verticalAutoReturn = false;           // set wether or not the vertical axis should auto return
+        public ProtectCameraFromWallClip wallClipProtector;
 
         protected float m_LookAngle;                    // The rig's y axis rotation.
         protected float m_TiltAngle;                    // The pivot's x axis rotation.
@@ -65,8 +65,8 @@ namespace UnityStandardAssets.Cameras
         {
             base.Awake();
             // Lock or unlock the cursor.
-            Cursor.lockState = m_LockCursor ? CursorLockMode.Locked : CursorLockMode.None;
-            Cursor.visible = !m_LockCursor;
+            Cursor.lockState = lockCursor ? CursorLockMode.Locked : CursorLockMode.None;
+            Cursor.visible = !lockCursor;
             m_PivotEulers = m_Pivot.rotation.eulerAngles;
 
             m_PivotTargetRot = m_Pivot.transform.localRotation;
@@ -76,33 +76,33 @@ namespace UnityStandardAssets.Cameras
             m_CurrentDist = m_OriginalDist;
             m_CurrentZoomDist = m_CurrentDist;
 
-            if (m_WallClipProtector == null)
-                m_WallClipProtector = GetComponent<ProtectCameraFromWallClip>();
+            if (wallClipProtector == null)
+                wallClipProtector = GetComponent<ProtectCameraFromWallClip>();
 
             Singleton = this;
         }
         
         protected void Update()
         {
-            if (m_EnabledRotation)
+            if (enabledRotation)
                 HandleRotationMovement();
 
-            if (m_EnabledZoom)
+            if (enabledZoom)
                 HandleZoom();
 
-            if (m_LockCursor != m_LockCursorDirty)
+            if (lockCursor != m_LockCursorDirty)
             {
-                Cursor.lockState = m_LockCursor ? CursorLockMode.Locked : CursorLockMode.None;
-                Cursor.visible = !m_LockCursor;
-                m_LockCursorDirty = m_LockCursor;
+                Cursor.lockState = lockCursor ? CursorLockMode.Locked : CursorLockMode.None;
+                Cursor.visible = !lockCursor;
+                m_LockCursorDirty = lockCursor;
             }
         }
 
         protected void LateUpdate()
         {
-            if (m_EnabledZoom && m_WallClipProtector == null)
+            if (enabledZoom && wallClipProtector == null)
             {
-                m_CurrentZoomDist = Mathf.SmoothDamp(m_CurrentZoomDist, m_CurrentDist, ref m_MoveVelocity, m_ZoomMoveTime);
+                m_CurrentZoomDist = Mathf.SmoothDamp(m_CurrentZoomDist, m_CurrentDist, ref m_MoveVelocity, zoomMoveTime);
                 m_Cam.localPosition = -Vector3.forward * m_CurrentZoomDist;
             }
         }
@@ -115,9 +115,9 @@ namespace UnityStandardAssets.Cameras
         
         protected override void FollowTarget(float deltaTime)
         {
-            if (m_Target == null) return;
+            if (target == null) return;
             // Move the rig towards target position.
-            transform.position = Vector3.Lerp(transform.position, m_Target.position, deltaTime * m_MoveSpeed);
+            transform.position = Vector3.Lerp(transform.position, target.position, deltaTime * moveSpeed);
         }
         
         private void HandleRotationMovement()
@@ -130,33 +130,33 @@ namespace UnityStandardAssets.Cameras
             var y = CrossPlatformInputManager.GetAxis("Mouse Y");
 
             // Adjust the look angle by an amount proportional to the turn speed and horizontal input.
-            m_LookAngle += x * m_TurnSpeed;
+            m_LookAngle += x * turnSpeed;
 
             // Rotate the rig (the root object) around Y axis only:
             m_TransformTargetRot = Quaternion.Euler(0f, m_LookAngle, 0f);
 
-            if (m_VerticalAutoReturn)
+            if (verticalAutoReturn)
             {
                 // For tilt input, we need to behave differently depending on whether we're using mouse or touch input:
                 // on mobile, vertical input is directly mapped to tilt value, so it springs back automatically when the look input is released
                 // we have to test whether above or below zero because we want to auto-return to zero even if min and max are not symmetrical.
-                m_TiltAngle = y > 0 ? Mathf.Lerp(0, -m_TiltMin, y) : Mathf.Lerp(0, m_TiltMax, -y);
+                m_TiltAngle = y > 0 ? Mathf.Lerp(0, -tiltMin, y) : Mathf.Lerp(0, tiltMax, -y);
             }
             else
             {
                 // on platforms with a mouse, we adjust the current angle based on Y mouse input and turn speed
-                m_TiltAngle -= y * m_TurnSpeed;
+                m_TiltAngle -= y * turnSpeed;
                 // and make sure the new value is within the tilt range
-                m_TiltAngle = Mathf.Clamp(m_TiltAngle, -m_TiltMin, m_TiltMax);
+                m_TiltAngle = Mathf.Clamp(m_TiltAngle, -tiltMin, tiltMax);
             }
 
             // Tilt input around X is applied to the pivot (the child of this object)
             m_PivotTargetRot = Quaternion.Euler(m_TiltAngle, m_PivotEulers.y, m_PivotEulers.z);
 
-            if (m_TurnSmoothing > 0)
+            if (turnSmoothing > 0)
             {
-                m_Pivot.localRotation = Quaternion.Slerp(m_Pivot.localRotation, m_PivotTargetRot, m_TurnSmoothing * Time.deltaTime);
-                transform.localRotation = Quaternion.Slerp(transform.localRotation, m_TransformTargetRot, m_TurnSmoothing * Time.deltaTime);
+                m_Pivot.localRotation = Quaternion.Slerp(m_Pivot.localRotation, m_PivotTargetRot, turnSmoothing * Time.deltaTime);
+                transform.localRotation = Quaternion.Slerp(transform.localRotation, m_TransformTargetRot, turnSmoothing * Time.deltaTime);
             }
             else
             {
@@ -169,11 +169,11 @@ namespace UnityStandardAssets.Cameras
         {
             // zoom (speed scales with distance)
             var scroll = CrossPlatformInputManager.GetAxis("Mouse ScrollWheel");
-            var step = scroll * m_ZoomSpeed;
-            m_CurrentDist = Mathf.Clamp(m_CurrentDist - step, m_MinZoomDistance, m_MaxZoomDistance);
+            var step = scroll * zoomSpeed;
+            m_CurrentDist = Mathf.Clamp(m_CurrentDist - step, minZoomDistance, maxZoomDistance);
 
-            if (m_WallClipProtector != null)
-                m_WallClipProtector.lookDistance = m_CurrentDist;
+            if (wallClipProtector != null)
+                wallClipProtector.lookDistance = m_CurrentDist;
         }
     }
 }
